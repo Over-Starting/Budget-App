@@ -4,12 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Executive Peso Ledger v9</title>
-    
     <link rel="manifest" href="manifest.json">
-    <script>
-      if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-    </script>
-
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --gold: #D4AF37; --dark: #000000; --card: #111111; --border: #222222; }
@@ -26,45 +22,31 @@
     </style>
 </head>
 <body class="pb-32">
-
-    <!-- TICKER -->
     <div class="bg-stone-900 overflow-hidden py-1 border-b border-stone-800 text-[10px] uppercase font-bold tracking-widest flex items-center">
         <div class="ticker gold-text px-4">
-            LIVE RATE: <span id="ticker-rate">Fetching...</span> • PAYOUT FORECAST ($412.80) = <span id="ticker-salary-php">₱0.00</span> • GOALS: PAY YOURSELF FIRST
+            LIVE RATE: <span id="ticker-rate">Fetching...</span> • PAYOUT FORECAST ($412.80) = <span id="ticker-salary-php">₱0.00</span> • PAY YOURSELF FIRST
         </div>
     </div>
-
-    <!-- TABS -->
     <div class="flex bg-black border-b border-stone-900 sticky top-0 z-50">
         <button onclick="switchTab('dash')" id="tab-dash" class="tab-btn active flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Dashboard</button>
         <button onclick="switchTab('payables')" id="tab-payables" class="tab-btn flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Payables</button>
         <button onclick="switchTab('expenses')" id="tab-expenses" class="tab-btn flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Daily Exp</button>
         <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Payouts</button>
     </div>
-
     <div class="p-5 space-y-6 text-sm">
-        
-        <!-- SECTION: DASHBOARD -->
         <div id="sec-dash" class="space-y-6">
             <div class="text-center py-2 border-b border-stone-900">
                 <h2 class="text-[10px] uppercase tracking-[0.3em] opacity-40 mb-1" id="payout-title">Forecast</h2>
                 <p class="text-4xl font-bold gold-text" id="dash-gross-php">₱0</p>
             </div>
-
-            <!-- GOALS PROGRESS SECTION -->
             <div>
                 <h3 class="text-[10px] uppercase tracking-widest opacity-60 mb-3 font-bold">Long-Term Savings Goals</h3>
-                <div id="dash-goals-container" class="space-y-4">
-                    <!-- Progress bars injected here -->
-                </div>
+                <div id="dash-goals-container" class="space-y-4"></div>
             </div>
-
-            <!-- DEDUCTIONS -->
             <div>
                 <h3 class="text-[10px] uppercase tracking-widest opacity-60 mb-3 font-bold">Current Payout Deductions</h3>
                 <div id="dash-deductions" class="space-y-2"></div>
             </div>
-
             <div class="card p-6 bg-gradient-to-b from-stone-900/40 to-black border-gold/30">
                 <p class="text-[10px] uppercase tracking-[0.2em] opacity-60 mb-2 font-bold italic">Net Available Funds</p>
                 <div class="flex justify-between items-end">
@@ -73,8 +55,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- SECTION: PAYABLES -->
         <div id="sec-payables" class="hidden space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-[11px] gold-text tracking-widest uppercase font-bold">List of Payables</h2>
@@ -82,17 +62,13 @@
             </div>
             <div id="checklist-container" class="space-y-3"></div>
         </div>
-
-        <!-- SECTION: EXPENSES -->
         <div id="sec-expenses" class="hidden space-y-4">
             <h2 class="text-[11px] gold-text tracking-widest uppercase font-bold">Transaction Ledger</h2>
             <div id="ledger-list" class="space-y-3"></div>
         </div>
-
-        <!-- SECTION: PAYOUTS -->
         <div id="sec-payouts" class="hidden space-y-6">
-            <div class="card p-6 space-y-6">
-                <h3 class="gold-text uppercase text-xs font-bold text-center">Income Tools</h3>
+            <div class="card p-6 space-y-6 text-center">
+                <h3 class="gold-text uppercase text-xs font-bold">Income Tools</h3>
                 <button onclick="loadHalfSalary()" class="w-full gold-bg p-4 rounded-xl font-black text-[11px] uppercase tracking-widest italic">Load Payout ($412.80)</button>
                 <div class="flex items-center justify-between bg-stone-900 p-4 rounded-xl border border-stone-800">
                     <label class="text-xs font-bold opacity-80 italic">Allowance Used?</label>
@@ -102,48 +78,47 @@
             <button onclick="confirmClear()" class="w-full text-center text-[10px] opacity-20 uppercase underline">Reset All Local Data</button>
         </div>
     </div>
-
-    <!-- MODAL: ADD BILL OR GOAL -->
     <div id="modal-savings" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]">
-        <div class="card p-6 w-full max-w-md space-y-4 border-gold">
-            <h3 class="gold-text font-bold uppercase tracking-widest text-center">Add Bill or Goal</h3>
+        <div class="card p-6 w-full max-w-md space-y-4 border-gold text-center">
+            <h3 class="gold-text font-bold uppercase tracking-widest">Add Bill or Goal</h3>
             <input type="text" id="sav-name" placeholder="Name (e.g. Wedding)">
             <input type="number" id="sav-amt" placeholder="Total Amount (₱)">
             <select id="sav-type" onchange="toggleGoalFields()">
                 <option value="bill">Type: Fixed Bill</option>
                 <option value="saving">Type: Long-Term Goal</option>
             </select>
-            <div id="bill-fields">
-                <select id="sav-due"><option value="15">Due on 15th</option><option value="30">Due on 30th</option></select>
-            </div>
+            <div id="bill-fields"><select id="sav-due"><option value="15">Due on 15th</option><option value="30">Due on 30th</option></select></div>
             <div id="goal-fields" class="hidden">
                 <p class="text-[10px] gold-text opacity-60 italic mb-1 uppercase">Term (Months):</p>
-                <select id="sav-term">
-                    <option value="1">1 Month</option><option value="6">6 Months</option><option value="12">12 Months (1 Year)</option>
-                    <option value="24">24 Months (2 Years)</option><option value="36">36 Months (3 Years)</option>
-                </select>
+                <select id="sav-term"><option value="1">1 Month</option><option value="6">6 Months</option><option value="12">12 Months</option><option value="24">24 Months</option><option value="36">36 Months</option></select>
             </div>
-            <div class="flex gap-2">
-                <button onclick="closeModal('modal-savings')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">CANCEL</button>
-                <button onclick="addCustomItem()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">ADD</button>
-            </div>
+            <div class="flex gap-2"><button onclick="closeModal('modal-savings')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">CANCEL</button><button onclick="addCustomItem()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">ADD</button></div>
         </div>
     </div>
-
-    <!-- (Expense and Income modals remain same as v8) -->
-    <div id="modal-income" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest">Extra Income</h3><input type="number" id="manual-income" placeholder="Amount (₱)"><div class="flex gap-2"><button onclick="closeModal('modal-income')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs">Cancel</button><button onclick="saveManualIncome()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Add</button></div></div></div>
-    <div id="modal-expense" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest text-center">New Expense</h3><input type="text" id="exp-desc" placeholder="Description"><input type="number" id="exp-amt" placeholder="Amount (₱)"><select id="exp-method" onchange="toggleCreditorField()"><option value="Cash">Cash</option><option value="Credit">Credit</option></select><input type="text" id="exp-creditor" class="hidden" placeholder="Creditor Name"><select id="exp-cat"><option value="Food">Food</option><option value="Pork">Pork</option><option value="Allowance">Allowance</option><option value="Other">Other</option></select><div class="flex gap-2"><button onclick="closeModal('modal-expense')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs uppercase font-bold">Cancel</button><button onclick="saveExpense()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold uppercase">Save</button></div></div></div>
-
-    <!-- ACTION NAV -->
+    <div id="modal-income" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100] text-center">
+        <div class="card p-6 w-full max-w-md space-y-4 border-gold">
+            <h3 class="gold-text font-bold uppercase tracking-widest">Extra Income</h3>
+            <input type="number" id="manual-income" placeholder="Amount (₱)">
+            <div class="flex gap-2"><button onclick="closeModal('modal-income')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs">Cancel</button><button onclick="saveManualIncome()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Add</button></div>
+        </div>
+    </div>
+    <div id="modal-expense" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100] text-center">
+        <div class="card p-6 w-full max-w-md space-y-4 border-gold">
+            <h3 class="gold-text font-bold uppercase tracking-widest">New Expense</h3>
+            <input type="text" id="exp-desc" placeholder="Description"><input type="number" id="exp-amt" placeholder="Amount (₱)">
+            <select id="exp-method" onchange="toggleCreditorField()"><option value="Cash">Cash</option><option value="Credit">Credit</option></select>
+            <input type="text" id="exp-creditor" class="hidden" placeholder="Creditor Name">
+            <select id="exp-cat"><option value="Food">Food</option><option value="Pork">Pork</option><option value="Allowance">Allowance</option><option value="Other">Other</option></select>
+            <div class="flex gap-2"><button onclick="closeModal('modal-expense')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">Cancel</button><button onclick="saveExpense()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Save</button></div>
+        </div>
+    </div>
     <div id="action-nav" class="fixed bottom-0 w-full p-6 bg-black/95 backdrop-blur-md border-t border-stone-900 flex gap-4">
         <button onclick="openModal('modal-income')" class="flex-1 gold-bg btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Extra</button>
         <button onclick="openModal('modal-expense')" class="flex-1 bg-stone-900 border border-stone-700 text-white btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Expense</button>
     </div>
-
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiINx2TLKFYfCc5OWZ_a_DtuVp1wLdEgVWYCXk5BWEibeDrciH2mmCrm0YUy0qO2oG/exec";
         const PAYOUT_USD = 412.80;
-
         let state = JSON.parse(localStorage.getItem('goldPesoV9')) || {
             extraIncomePHP: 0, expenses: [], allowanceUsed: false,
             payables: [
@@ -154,18 +129,14 @@
                 { id: 5, name: "Gixxer", amt: 5100, paid: false, due: 30, type: 'bill', term: 1, saved: 0 }
             ]
         };
-
         let usdRate = 56.00;
-
         async function fetchRate() {
             try {
                 const res = await fetch('https://open.er-api.com/v6/latest/USD');
                 const data = await res.json();
-                usdRate = data.rates.PHP;
-                render();
+                usdRate = data.rates.PHP; render();
             } catch (e) { console.log("Rate Error"); }
         }
-
         function switchTab(name) {
             ['dash', 'payables', 'expenses', 'payouts'].forEach(t => {
                 document.getElementById(`sec-${t}`).classList.add('hidden');
@@ -175,7 +146,6 @@
             document.getElementById(`tab-${name}`).classList.add('active');
             document.getElementById('action-nav').classList.toggle('hidden', name === 'dash');
         }
-
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function toggleGoalFields() {
@@ -183,116 +153,63 @@
             document.getElementById('goal-fields').classList.toggle('hidden', !isGoal);
             document.getElementById('bill-fields').classList.toggle('hidden', isGoal);
         }
-
         function addCustomItem() {
             const name = document.getElementById('sav-name').value;
             const amt = parseFloat(document.getElementById('sav-amt').value);
             const type = document.getElementById('sav-type').value;
             const term = parseInt(document.getElementById('sav-term').value);
             const due = parseInt(document.getElementById('sav-due').value);
-
             if (name && amt) {
-                state.payables.push({ id: Date.now(), name, amt, paid: false, due: (type === 'saving' ? 'Every Payout' : due), type, term: (type === 'saving' ? term : 1), saved: 0 });
+                state.payables.push({ id: Date.now(), name, amt, paid: false, due: (type === 'saving' ? 'Payout' : due), type, term: (type === 'saving' ? term : 1), saved: 0 });
                 save(); closeModal('modal-savings');
             }
         }
-
         function togglePayable(id) {
             const p = state.payables.find(x => x.id === id);
             if (p.type === 'saving') {
                 const perPayout = (p.amt / p.term) / 2;
                 if (!p.paid) { p.saved += perPayout; p.paid = true; }
                 else { p.saved -= perPayout; p.paid = false; }
-            } else {
-                p.paid = !p.paid;
-            }
+            } else { p.paid = !p.paid; }
             save();
         }
-
         function render() {
-            const day = new Date().getDate();
-            const forecastPHP = PAYOUT_USD * usdRate;
-            const period = day <= 15 ? 15 : 30;
-            
-            // Logic for Deductions
+            const day = new Date().getDate(); const forecastPHP = PAYOUT_USD * usdRate; const period = day <= 15 ? 15 : 30;
             const unpaidBills = state.payables.filter(p => !p.paid && p.due === period && p.type === 'bill');
             const unpaidGoals = state.payables.filter(p => !p.paid && p.type === 'saving');
             const unpaidCredit = state.expenses.filter(e => e.method === 'Credit');
-            
             let goalDeductionTotal = 0;
             const goalsHTML = unpaidGoals.map(g => {
-                const perPayout = (g.amt / g.term) / 2;
-                goalDeductionTotal += perPayout;
+                const perPayout = (g.amt / g.term) / 2; goalDeductionTotal += perPayout;
                 const perc = Math.round((g.saved / g.amt) * 100);
-                return `
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-[10px] uppercase font-bold">
-                            <span>${g.name}</span><span>${perc}%</span>
-                        </div>
-                        <div class="progress-bg"><div class="gold-bg h-full" style="width: ${perc}%"></div></div>
-                        <p class="text-[9px] opacity-40 italic">Payout Requirement: ₱${perPayout.toLocaleString()}</p>
-                    </div>
-                `;
+                return `<div class="space-y-1"><div class="flex justify-between text-[10px] uppercase font-bold"><span>${g.name}</span><span>${perc}%</span></div><div class="progress-bg"><div class="gold-bg h-full" style="width: ${perc}%"></div></div><p class="text-[9px] opacity-40 italic font-bold tracking-tighter">Required: ₱${perPayout.toLocaleString()}</p></div>`;
             }).join('');
-            
             document.getElementById('dash-goals-container').innerHTML = goalsHTML || '<p class="text-[10px] opacity-20 italic">No goals active.</p>';
-
             const totalDeductions = unpaidBills.reduce((s,i)=>s+i.amt,0) + unpaidCredit.reduce((s,i)=>s+i.amount,0) + goalDeductionTotal;
             const netAvailable = (forecastPHP + state.extraIncomePHP) - totalDeductions;
-
             document.getElementById('dash-gross-php').innerText = `₱${(forecastPHP + state.extraIncomePHP).toLocaleString(undefined, {maximumFractionDigits:0})}`;
             document.getElementById('dash-net-php').innerText = `₱${netAvailable.toLocaleString(undefined, {maximumFractionDigits:0})}`;
             document.getElementById('dash-net-usd').innerText = `$${(netAvailable / usdRate).toFixed(2)}`;
             document.getElementById('ticker-salary-php').innerText = `₱${forecastPHP.toLocaleString()}`;
-
-            const deductList = document.getElementById('dash-deductions');
-            deductList.innerHTML = '';
+            const deductList = document.getElementById('dash-deductions'); deductList.innerHTML = '';
             unpaidBills.forEach(p => { deductList.innerHTML += `<div class="flex justify-between text-xs opacity-60 italic"><span>${p.name}</span><span>₱${p.amt.toLocaleString()}</span></div>`; });
-            unpaidGoals.forEach(g => { deductList.innerHTML += `<div class="flex justify-between text-xs gold-text italic"><span>${g.name} (Goal Layer)</span><span>₱${((g.amt / g.term)/2).toLocaleString()}</span></div>`; });
-            unpaidCredit.forEach(e => { deductList.innerHTML += `<div class="flex justify-between text-xs text-red-500 italic"><span>${e.desc} (to ${e.owner})</span><span>₱${e.amount.toLocaleString()}</span></div>`; });
-
-            // Tab Rendering
-            document.getElementById('checklist-container').innerHTML = state.payables.map(p => `
-                <div onclick="togglePayable(${p.id})" class="card p-4 flex justify-between items-center ${p.paid ? 'opacity-20 italic' : 'border-l-2 border-gold'}">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-tighter">${p.name}</span>
-                        <p class="text-[9px] opacity-40 italic font-bold">Requirement: ₱${p.type === 'saving' ? ((p.amt/p.term)/2).toLocaleString() : p.amt.toLocaleString()}</p>
-                    </div>
-                    <span class="text-[10px] font-bold">${p.type === 'saving' ? 'SET ASIDE' : 'PAID'}</span>
-                </div>
-            `).join('');
-
-            document.getElementById('ledger-list').innerHTML = state.expenses.map(e => `
-                <div class="card p-4 flex justify-between items-center border-l-2 ${e.method === 'Credit' ? 'border-red-900' : 'border-stone-800'}">
-                    <div><p class="text-[10px] font-bold uppercase gold-text">${e.desc}</p><p class="text-[8px] opacity-40 uppercase">${e.method} • ${e.owner}</p></div>
-                    <p class="font-black text-sm">₱${e.amount.toLocaleString()}</p>
-                </div>
-            `).join('');
+            unpaidGoals.forEach(g => { deductList.innerHTML += `<div class="flex justify-between text-xs gold-text italic"><span>${g.name} (Goal)</span><span>₱${((g.amt / g.term)/2).toLocaleString()}</span></div>`; });
+            unpaidCredit.forEach(e => { deductList.innerHTML += `<div class="flex justify-between text-xs text-red-500 italic font-bold"><span>${e.desc} (to ${e.owner})</span><span>₱${e.amount.toLocaleString()}</span></div>`; });
+            document.getElementById('checklist-container').innerHTML = state.payables.map(p => `<div onclick="togglePayable(${p.id})" class="card p-4 flex justify-between items-center ${p.paid ? 'opacity-20 italic' : 'border-l-2 border-gold'}"><div><span class="text-xs font-bold uppercase tracking-tighter">${p.name}</span><p class="text-[9px] opacity-40 italic font-bold uppercase">Required: ₱${p.type === 'saving' ? ((p.amt/p.term)/2).toLocaleString() : p.amt.toLocaleString()}</p></div><span class="text-[10px] font-bold uppercase">${p.type === 'saving' ? 'SAVED' : 'PAID'}</span></div>`).join('');
+            document.getElementById('ledger-list').innerHTML = state.expenses.map(e => `<div class="card p-4 flex justify-between items-center border-l-2 ${e.method === 'Credit' ? 'border-red-900' : 'border-stone-800'}"><div><p class="text-[10px] font-bold uppercase gold-text">${e.desc}</p><p class="text-[8px] opacity-40 uppercase tracking-tighter">${e.method} • ${e.owner}</p></div><p class="font-black text-sm">₱${e.amount.toLocaleString()}</p></div>`).join('');
         }
-
-        // Shared logic from v8
         function save() { localStorage.setItem('goldPesoV9', JSON.stringify(state)); render(); }
-        function loadHalfSalary() { state.extraIncomePHP = 0; state.payables.forEach(p => p.paid = false); alert("New Payout Period Loaded"); save(); }
+        function loadHalfSalary() { state.extraIncomePHP = 0; state.payables.forEach(p => p.paid = false); alert("Period Reset"); save(); }
         function toggleAllowance() { state.allowanceUsed = document.getElementById('allowance-check').checked; save(); }
-        function confirmClear() { if (confirm("Full Reset?")) { localStorage.clear(); location.reload(); } }
+        function confirmClear() { if (confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
         function toggleCreditorField() { document.getElementById('exp-creditor').classList.toggle('hidden', document.getElementById('exp-method').value !== 'Credit'); }
         function saveManualIncome() { const amt = parseFloat(document.getElementById('manual-income').value); if (amt) { state.extraIncomePHP += amt; save(); closeModal('modal-income'); } }
         function saveExpense() {
-            const desc = document.getElementById('exp-desc').value;
-            const amt = parseFloat(document.getElementById('exp-amt').value);
-            const method = document.getElementById('exp-method').value;
-            const creditor = document.getElementById('exp-creditor').value || "N/A";
-            const cat = document.getElementById('exp-cat').value;
-            if (desc && amt) {
-                const entry = { desc, amount: amt, method, owner: creditor, category: cat, date: new Date().toLocaleDateString() };
-                state.expenses.unshift(entry); save(); closeModal('modal-expense');
-                try { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({...entry, type: 'Expense'}) }); } catch (e) {}
-            }
+            const desc = document.getElementById('exp-desc').value; const amt = parseFloat(document.getElementById('exp-amt').value); const method = document.getElementById('exp-method').value;
+            const creditor = document.getElementById('exp-creditor').value || "N/A"; const cat = document.getElementById('exp-cat').value;
+            if (desc && amt) { const entry = { desc, amount: amt, method, owner: creditor, category: cat, date: new Date().toLocaleDateString() }; state.expenses.unshift(entry); save(); closeModal('modal-expense'); try { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({...entry, type: 'Expense'}) }); } catch (e) {} }
         }
-
-        fetchRate();
-        setInterval(fetchRate, 300000);
-        render();
+        fetchRate(); setInterval(fetchRate, 300000); render();
     </script>
 </body>
 </html>
