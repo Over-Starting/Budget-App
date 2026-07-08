@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Executive Peso Ledger v8</title>
+    
+    <!-- PWA LOGIC -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --gold: #D4AF37; --dark: #000000; --card: #111111; --border: #222222; }
@@ -16,6 +25,7 @@
         @keyframes slide { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
         .ticker { display: inline-block; white-space: nowrap; animation: slide 15s linear infinite; }
         input, select { background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; width: 100%; outline: none; }
+        input:focus { border-color: var(--gold); }
     </style>
 </head>
 <body class="pb-32">
@@ -27,7 +37,7 @@
         </div>
     </div>
 
-    <!-- TABS NAVIGATION -->
+    <!-- TABS NAVIGATION (APP UI) -->
     <div class="flex bg-black border-b border-stone-900 sticky top-0 z-50">
         <button onclick="switchTab('dash')" id="tab-dash" class="tab-btn active flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Dashboard</button>
         <button onclick="switchTab('payables')" id="tab-payables" class="tab-btn flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Payables</button>
@@ -35,22 +45,25 @@
         <button onclick="switchTab('payouts')" id="tab-payouts" class="tab-btn flex-1 py-4 text-[10px] uppercase font-bold tracking-widest">Payouts</button>
     </div>
 
-    <!-- CONTENT SECTIONS -->
-    <div class="p-5 space-y-6">
+    <!-- MAIN CONTENT -->
+    <div class="p-5 space-y-6 text-sm">
         
-        <!-- SECTION 1: DASHBOARD (OVERVIEW) -->
+        <!-- DASHBOARD (OVERVIEW) -->
         <div id="sec-dash" class="space-y-6">
             <div class="text-center py-4 border-b border-stone-900">
-                <h2 class="text-[10px] uppercase tracking-[0.3em] opacity-40 mb-2" id="payout-title">Calculating Forecast...</h2>
-                <p class="text-xs gold-text italic mb-1">Estimated Payout ($412.80)</p>
+                <h2 class="text-[10px] uppercase tracking-[0.3em] opacity-40 mb-2" id="payout-title">Forecast</h2>
+                <p class="text-xs gold-text italic mb-1">Expected Payout ($412.80)</p>
                 <p class="text-4xl font-bold gold-text" id="dash-gross-php">₱0</p>
             </div>
 
             <div>
-                <h3 class="text-[10px] uppercase tracking-widest opacity-60 mb-3 font-bold">Pending Deductions (This Payout)</h3>
-                <div id="dash-deductions" class="space-y-2">
-                    <!-- Filled by JS -->
-                </div>
+                <h3 class="text-[10px] uppercase tracking-widest opacity-60 mb-3 font-bold">Savings & Goals Progress</h3>
+                <div id="dash-savings" class="space-y-2"></div>
+            </div>
+
+            <div>
+                <h3 class="text-[10px] uppercase tracking-widest opacity-60 mb-3 font-bold">Pending Deductions (Current Payout)</h3>
+                <div id="dash-deductions" class="space-y-2"></div>
             </div>
 
             <div class="card p-6 bg-gradient-to-b from-stone-900/40 to-black border-gold/30 shadow-xl">
@@ -59,78 +72,65 @@
                     <p class="text-4xl font-black gold-text" id="dash-net-php">₱0</p>
                     <p class="text-lg gold-text opacity-80" id="dash-net-usd">$0.00</p>
                 </div>
-                <p class="text-[9px] opacity-30 mt-3 italic uppercase tracking-tighter">*Calculated as (Half Salary + Extra) - (Pending Bills + Credit Debts)</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-stone-900/30 p-4 rounded-xl border border-stone-800">
-                    <p class="text-[9px] uppercase opacity-40 font-bold mb-1">Savings Goal Progress</p>
-                    <p class="text-lg font-bold gold-text" id="dash-total-savings">₱0</p>
-                </div>
-                <div class="bg-stone-900/30 p-4 rounded-xl border border-stone-800 text-right">
-                    <p class="text-[9px] uppercase opacity-40 font-bold mb-1">Daily Allowance</p>
-                    <p class="text-xs italic gold-text" id="dash-allowance-status">Checking...</p>
-                </div>
             </div>
         </div>
 
-        <!-- SECTION 2: PAYABLES (EDITABLE) -->
+        <!-- PAYABLES CHECKLIST -->
         <div id="sec-payables" class="hidden space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-[11px] gold-text tracking-widest uppercase font-bold italic">Bill & Savings Checklist</h2>
-                <button onclick="openSavingsModal()" class="text-[9px] gold-bg px-2 py-1 rounded font-bold">+ New Entry</button>
+                <button onclick="openModal('modal-savings')" class="text-[9px] gold-bg px-2 py-1 rounded font-bold">+ New Item</button>
             </div>
             <div id="checklist-container" class="space-y-3"></div>
         </div>
 
-        <!-- SECTION 3: DAILY EXPENSES (LEDGER) -->
+        <!-- TRANSACTION LEDGER -->
         <div id="sec-expenses" class="hidden space-y-4">
-            <h2 class="text-[11px] gold-text tracking-widest uppercase font-bold italic">Transaction Ledger</h2>
+            <h2 class="text-[11px] gold-text tracking-widest uppercase font-bold italic">Daily Ledger</h2>
             <div id="ledger-list" class="space-y-3"></div>
         </div>
 
-        <!-- SECTION 4: PAYOUTS (ENTRY) -->
+        <!-- PAYOUTS & SETTINGS -->
         <div id="sec-payouts" class="hidden space-y-6">
             <div class="card p-6 space-y-6 border-gold/20">
-                <h3 class="gold-text uppercase text-xs font-bold text-center italic">Manage Income</h3>
+                <h3 class="gold-text uppercase text-xs font-bold text-center">Income Tools</h3>
                 <button onclick="loadHalfSalary()" class="w-full gold-bg p-4 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg">
                     Load Payout ($412.80)
                 </button>
                 <div class="flex items-center justify-between bg-stone-900 p-4 rounded-xl border border-stone-800">
-                    <label class="text-xs font-bold opacity-80 italic tracking-widest">₱400 Allowance Used?</label>
+                    <label class="text-xs font-bold opacity-80 italic">₱400 Allowance Used Today?</label>
                     <input type="checkbox" id="allowance-check" onchange="toggleAllowance()" class="w-6 h-6 accent-gold">
                 </div>
             </div>
-            <button onclick="confirmClear()" class="w-full text-center text-[10px] opacity-20 uppercase underline">Reset All Local Data</button>
+            <button onclick="confirmClear()" class="w-full text-center text-[10px] opacity-20 uppercase underline">Reset Everything (New Month)</button>
         </div>
     </div>
 
-    <!-- ACTION BUTTONS -->
+    <!-- ACTION NAV BUTTONS -->
     <div id="action-nav" class="fixed bottom-0 w-full p-6 bg-black/95 backdrop-blur-md border-t border-stone-900 flex gap-4">
-        <button onclick="openIncomeModal()" class="flex-1 gold-bg btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Extra Income</button>
-        <button onclick="openExpenseModal()" class="flex-1 bg-stone-900 border border-stone-700 text-white btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Expense</button>
+        <button onclick="openModal('modal-income')" class="flex-1 gold-bg btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Extra</button>
+        <button onclick="openModal('modal-expense')" class="flex-1 bg-stone-900 border border-stone-700 text-white btn-active py-5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">Add Expense</button>
     </div>
 
-    <!-- MODALS -->
-    <div id="modal-income" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest">Extra Income (Pesos)</h3><input type="number" id="manual-income" placeholder="Amount (₱)"><div class="flex gap-2"><button onclick="closeModal('modal-income')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs uppercase font-bold">Cancel</button><button onclick="saveManualIncome()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold uppercase">Add Income</button></div></div></div>
-    <div id="modal-savings" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest">New Bill or Goal</h3><input type="text" id="sav-name" placeholder="Name"><input type="number" id="sav-amt" placeholder="Amount (₱)"><select id="sav-due"><option value="15">Due on 15th</option><option value="30">Due on 30th</option></select><div class="flex gap-2"><button onclick="closeModal('modal-savings')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs uppercase font-bold">Cancel</button><button onclick="addCustomSaving()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold uppercase">Add to List</button></div></div></div>
-    <div id="modal-expense" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest">New Ledger Entry</h3><input type="text" id="exp-desc" placeholder="What did you buy?"><input type="number" id="exp-amt" placeholder="Amount (₱)"><select id="exp-method" onchange="toggleCreditorField()"><option value="Cash">Cash Payment</option><option value="Credit">Credit (Utang)</option></select><input type="text" id="exp-creditor" class="hidden" placeholder="Creditor's Name"><select id="exp-cat"><option value="Food">Food</option><option value="Pork">Pork</option><option value="Allowance">Allowance</option><option value="Other">Other</option></select><div class="flex gap-2"><button onclick="closeModal('modal-expense')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs uppercase font-bold">Cancel</button><button onclick="saveExpense()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold uppercase">Save Expense</button></div></div></div>
+    <!-- MODAL WINDOWS -->
+    <div id="modal-income" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest text-center">Extra Income</h3><input type="number" id="manual-income" placeholder="Amount (₱)"><div class="flex gap-2"><button onclick="closeModal('modal-income')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">Cancel</button><button onclick="saveManualIncome()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Add</button></div></div></div>
+    
+    <div id="modal-savings" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest text-center">New Bill/Savings</h3><input type="text" id="sav-name" placeholder="Name"><input type="number" id="sav-amt" placeholder="Amount (₱)"><select id="sav-due"><option value="15">Due on 15th</option><option value="30">Due on 30th</option></select><select id="sav-type"><option value="bill">Type: Bill</option><option value="saving">Type: Savings Goal</option></select><div class="flex gap-2"><button onclick="closeModal('modal-savings')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">Cancel</button><button onclick="addCustomSaving()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Add</button></div></div></div>
+
+    <div id="modal-expense" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-6 z-[100]"><div class="card p-6 w-full max-w-md space-y-4 border-gold"><h3 class="gold-text font-bold uppercase tracking-widest text-center">New Expense</h3><input type="text" id="exp-desc" placeholder="What did you buy?"><input type="number" id="exp-amt" placeholder="Amount (₱)"><select id="exp-method" onchange="toggleCreditorField()"><option value="Cash">Method: Cash</option><option value="Credit">Method: Credit</option></select><input type="text" id="exp-creditor" class="hidden" placeholder="Creditor Name"><select id="exp-cat"><option value="Food">Category: Food</option><option value="Pork">Category: Pork</option><option value="Allowance">Category: Allowance</option><option value="Other">Category: Other</option></select><div class="flex gap-2"><button onclick="closeModal('modal-expense')" class="flex-1 bg-stone-800 p-4 rounded-xl text-xs font-bold">Cancel</button><button onclick="saveExpense()" class="flex-1 gold-bg p-4 rounded-xl text-xs font-bold">Save</button></div></div></div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiINx2TLKFYfCc5OWZ_a_DtuVp1wLdEgVWYCXk5BWEibeDrciH2mmCrm0YUy0qO2oG/exec";
-        const PAYOUT_USD = 412.80; // This is half of your $825.60
+        const PAYOUT_USD = 412.80;
 
-        let state = JSON.parse(localStorage.getItem('goldPesoV8')) || {
-            extraIncomePHP: 0, 
-            salaryLoaded: false,
-            expenses: [], 
-            allowanceUsed: false,
+        let state = JSON.parse(localStorage.getItem('goldPesoV8_Final')) || {
+            extraIncomePHP: 0, expenses: [], allowanceUsed: false,
             payables: [
-                { id: 1, name: "Water", amt: 1000, paid: false, due: 15 },
-                { id: 2, name: "Electricity", amt: 1800, paid: false, due: 15 },
-                { id: 3, name: "Papa's Allowance", amt: 2000, paid: false, due: 15 },
-                { id: 4, name: "Internet", amt: 800, paid: false, due: 30 },
-                { id: 5, name: "Gixxer", amt: 5100, paid: false, due: 30 }
+                { id: 1, name: "Water", amt: 1000, paid: false, due: 15, type: 'bill' },
+                { id: 2, name: "Electricity", amt: 1800, paid: false, due: 15, type: 'bill' },
+                { id: 3, name: "Papa's Allowance", amt: 2000, paid: false, due: 15, type: 'bill' },
+                { id: 4, name: "Internet", amt: 800, paid: false, due: 30, type: 'bill' },
+                { id: 5, name: "Gixxer", amt: 5100, paid: false, due: 30, type: 'bill' }
             ]
         };
 
@@ -142,7 +142,7 @@
                 const data = await res.json();
                 usdRate = data.rates.PHP;
                 render();
-            } catch (e) { console.log("Rate Offline"); }
+            } catch (e) { console.log("Forex Error"); }
         }
 
         function switchTab(name) {
@@ -155,14 +155,13 @@
             document.getElementById('action-nav').classList.toggle('hidden', name === 'dash');
         }
 
-        function toggleAllowance() { state.allowanceUsed = document.getElementById('allowance-check').checked; save(); }
-        function loadHalfSalary() { state.salaryLoaded = true; save(); alert("Payout Loaded!"); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function openIncomeModal() { document.getElementById('modal-income').classList.remove('hidden'); }
-        function openExpenseModal() { document.getElementById('modal-expense').classList.remove('hidden'); }
-        function openSavingsModal() { document.getElementById('modal-savings').classList.remove('hidden'); }
         function toggleCreditorField() { document.getElementById('exp-creditor').classList.toggle('hidden', document.getElementById('exp-method').value !== 'Credit'); }
 
+        function loadHalfSalary() { state.extraIncomePHP = 0; alert("Salary Forecast Loaded"); render(); }
+        function toggleAllowance() { state.allowanceUsed = document.getElementById('allowance-check').checked; save(); }
+        
         function saveManualIncome() {
             const amt = parseFloat(document.getElementById('manual-income').value);
             if (amt) { state.extraIncomePHP += amt; save(); closeModal('modal-income'); }
@@ -172,7 +171,8 @@
             const name = document.getElementById('sav-name').value;
             const amt = parseFloat(document.getElementById('sav-amt').value);
             const due = parseInt(document.getElementById('sav-due').value);
-            if (name && amt) { state.payables.push({ id: Date.now(), name, amt, paid: false, due: due }); save(); closeModal('modal-savings'); }
+            const type = document.getElementById('sav-type').value;
+            if (name && amt) { state.payables.push({ id: Date.now(), name, amt, paid: false, due, type }); save(); closeModal('modal-savings'); }
         }
 
         function saveExpense() {
@@ -193,64 +193,59 @@
         function render() {
             const day = new Date().getDate();
             const forecastPHP = PAYOUT_USD * usdRate;
+            const period = day <= 15 ? 15 : 30;
             
-            // Logic: Determine relevant bills based on date (1st-15th vs 16th-30th)
-            const currentPeriodDue = day <= 15 ? 15 : 30;
-            const pendingPayables = state.payables.filter(p => !p.paid && p.due === currentPeriodDue);
+            const unpaidPayables = state.payables.filter(p => !p.paid && p.due === period);
+            const unpaidSavings = state.payables.filter(p => !p.paid && p.type === 'saving');
             const unpaidCredit = state.expenses.filter(e => e.method === 'Credit');
             
-            const totalDeductions = pendingPayables.reduce((s,i)=>s+i.amt,0) + unpaidCredit.reduce((s,i)=>s+i.amount,0);
+            const totalDeductions = unpaidPayables.reduce((s,i)=>s+i.amt,0) + unpaidCredit.reduce((s,i)=>s+i.amount,0) + unpaidSavings.reduce((s,i)=>s+i.amt,0);
             const totalIncome = forecastPHP + state.extraIncomePHP;
             const netAvailable = totalIncome - totalDeductions;
-            
-            const savedThisPeriod = state.payables.filter(p => p.paid && p.due === currentPeriodDue).reduce((s,i)=>s+i.amt,0);
 
-            // Ticker & Headers
             document.getElementById('ticker-rate').innerText = `$1 = ₱${usdRate.toFixed(2)}`;
-            document.getElementById('ticker-salary-php').innerText = `₱${forecastPHP.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-            document.getElementById('payout-title').innerText = day <= 15 ? "15th Mid-Month Forecast" : "30th End-Month Forecast";
+            document.getElementById('ticker-salary-php').innerText = `₱${forecastPHP.toLocaleString()}`;
+            document.getElementById('payout-title').innerText = `${period}th Payout Overview`;
             document.getElementById('dash-gross-php').innerText = `₱${totalIncome.toLocaleString(undefined, {maximumFractionDigits:0})}`;
-
-            // Dash Net Available
             document.getElementById('dash-net-php').innerText = `₱${netAvailable.toLocaleString(undefined, {maximumFractionDigits:0})}`;
             document.getElementById('dash-net-usd').innerText = `$${(netAvailable / usdRate).toFixed(2)}`;
-            document.getElementById('dash-total-savings').innerText = `₱${savedThisPeriod.toLocaleString()}`;
-            document.getElementById('dash-allowance-status').innerText = state.allowanceUsed ? "Used Today" : "Not Yet Used";
 
-            // Dash Deductions List
+            // Dash Savings List
+            const dashSav = document.getElementById('dash-savings');
+            dashSav.innerHTML = state.payables.filter(p => p.type === 'saving').map(g => `
+                <div class="flex justify-between text-xs ${g.paid ? 'opacity-30 line-through font-normal' : 'gold-text italic font-bold'}">
+                    <span>${g.name}</span><span>₱${g.amt.toLocaleString()}</span>
+                </div>
+            `).join('') || '<p class="text-[10px] opacity-20 italic">No savings added yet.</p>';
+
+            // Dash Pending Deductions
             const deductList = document.getElementById('dash-deductions');
             deductList.innerHTML = '';
-            pendingPayables.forEach(p => {
-                deductList.innerHTML += `<div class="flex justify-between text-xs opacity-60 italic"><span>${p.name} (Due ${p.due}th)</span><span>₱${p.amt.toLocaleString()}</span></div>`;
-            });
-            unpaidCredit.forEach(e => {
-                deductList.innerHTML += `<div class="flex justify-between text-xs text-red-500 italic"><span>${e.desc} (Credit to ${e.owner})</span><span>₱${e.amount.toLocaleString()}</span></div>`;
-            });
-            if (deductList.innerHTML === '') deductList.innerHTML = '<p class="text-[10px] opacity-20">No pending bills or debts this period.</p>';
+            unpaidPayables.forEach(p => { deductList.innerHTML += `<div class="flex justify-between text-xs opacity-60 italic"><span>${p.name}</span><span>₱${p.amt.toLocaleString()}</span></div>`; });
+            unpaidCredit.forEach(e => { deductList.innerHTML += `<div class="flex justify-between text-xs text-red-500 italic font-bold"><span>${e.desc} (to ${e.owner})</span><span>₱${e.amount.toLocaleString()}</span></div>`; });
 
-            // Lists
+            // Payables Tab Rendering
             document.getElementById('checklist-container').innerHTML = state.payables.map(p => `
                 <div onclick="togglePayable(${p.id})" class="card p-4 flex justify-between items-center ${p.paid ? 'opacity-20 italic' : 'border-l-2 border-gold'}">
-                    <div><span class="text-xs font-bold uppercase tracking-tighter">${p.name}</span><p class="text-[9px] opacity-40 italic font-bold">Due: ${p.due}th</p></div>
+                    <div><span class="text-xs font-bold uppercase tracking-tighter">${p.name}</span><p class="text-[9px] opacity-40 italic">Due: ${p.due}th • ${p.type}</p></div>
                     <span class="text-[10px] font-bold">₱${p.amt.toLocaleString()}</span>
                 </div>
             `).join('');
 
+            // Ledger Rendering
             document.getElementById('ledger-list').innerHTML = state.expenses.map(e => `
                 <div class="card p-4 flex justify-between items-center border-l-2 ${e.method === 'Credit' ? 'border-red-900' : 'border-stone-800'}">
                     <div><p class="text-[10px] font-bold uppercase gold-text">${e.desc}</p><p class="text-[8px] opacity-40 uppercase">${e.method} • ${e.owner}</p></div>
                     <p class="font-black text-sm">₱${e.amount.toLocaleString()}</p>
                 </div>
             `).join('');
-
-            localStorage.setItem('goldPesoV8', JSON.stringify(state));
         }
 
-        function confirmClear() { if (confirm("Start a new month? This resets all payments and extra income.")) { state.extraIncomePHP = 0; state.salaryLoaded = false; state.expenses = []; state.payables.forEach(p=>p.paid=false); render(); } }
-        function save() { render(); }
-
+        function save() { localStorage.setItem('goldPesoV8_Final', JSON.stringify(state)); render(); }
+        function confirmClear() { if (confirm("Start new payout cycle? Ledger and extra income will reset.")) { state.extraIncomePHP = 0; state.expenses = []; state.payables.forEach(p=>p.paid=false); save(); } }
+        
         fetchRate();
-        setInterval(fetchRate, 300000); 
+        setInterval(fetchRate, 300000);
         render();
     </script>
 </body>
